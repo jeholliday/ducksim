@@ -1,0 +1,36 @@
+FROM ubuntu:18.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Get necessary packages for installing ROS
+RUN apt-get -y update
+RUN apt-get install  -y apt-transport-https ca-certificates curl gnupg lsb-release
+
+# Setup ROS apt repo
+RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+RUN apt-get -y update
+
+# Install ROS
+RUN apt-get install -y ros-melodic-ros-base
+RUN apt-get install -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool build-essential
+
+# Set ROS environment variables
+ENV LD_LIBRARY_PATH=/opt/ros/melodic/lib
+ENV ROS_ETC_DIR=/opt/ros/melodic/etc/ros
+ENV CMAKE_PREFIX_PATH=/opt/ros/melodic
+ENV ROS_ROOT=/opt/ros/melodic/share/ros
+ENV ROS_MASTER_URI=http://localhost:11311
+ENV ROS_VERSION=1
+ENV ROS_PYTHON_VERSION=2
+ENV PYTHONPATH=/opt/ros/melodic/lib/python2.7/dist-packages
+ENV ROS_PACKAGE_PATH=/opt/ros/melodic/share
+ENV ROSLISP_PACKAGE_DIRECTORIES=
+ENV PATH=/opt/ros/melodic/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV PKG_CONFIG_PATH=/opt/ros/melodic/lib/pkgconfig
+ENV ROS_DISTRO=melodic
+
+# Build and install ducksim
+RUN mkdir -p /catkin_ws/src
+RUN cd /catkin_ws/src && git clone https://github.com/jeholliday/ducksim.git
+RUN cd /catkin_ws && catkin_make -DCMAKE_INSTALL_PREFIX=/opt/ros/melodic install

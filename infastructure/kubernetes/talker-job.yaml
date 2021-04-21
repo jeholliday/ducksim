@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: talker-job
+spec:
+  template:
+    metadata:
+      labels:
+        app: talker
+    spec:
+      containers:
+      - name: ros-master
+        image: 129.114.26.80:5000/ros
+        imagePullPolicy: Always
+        command: ["/opt/ros/melodic/bin/rostopic"]
+        args: ["pub", "-r", "1", "/hello", "std_msgs/String", "{data: 'Hello, World!'}"]
+        env:
+          - name: ROS_MASTER_URI
+            value: http://129.114.26.80:30001
+          - name: ROS_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+      restartPolicy: Never
