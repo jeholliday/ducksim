@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   visualization_msgs
+  message_generation
 )
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -41,18 +42,16 @@ catkin_python_setup()
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  Pose.msg
+)
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  SpawnDuck.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -62,10 +61,10 @@ catkin_python_setup()
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   std_msgs#   visualization_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs std_msgs visualization_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -97,10 +96,7 @@ catkin_python_setup()
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ducksim
-#  CATKIN_DEPENDS geometry_msgs rospy std_msgs visualization_msgs
-#  DEPENDS system_lib
+  CATKIN_DEPENDS geometry_msgs rospy std_msgs visualization_msgs message_runtime
 )
 
 
@@ -115,6 +111,7 @@ catkin_package(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   nodes/turtlesim_demo.py
+  nodes/ducksim_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
