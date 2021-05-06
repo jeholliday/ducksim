@@ -53,6 +53,7 @@ add_service_files(
   SpawnDuck.srv
   AssignTask.srv
   CompleteTask.srv
+  MoveObject.srv
 )
 
 ## Generate actions in the 'action' folder

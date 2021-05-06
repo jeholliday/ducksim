@@ -1,0 +1,12 @@
+uint8 PICKUP=0
+uint8 DROP=1
+
+string duck
+string obj
+uint8 action
+
+---
+uint8 SUCCESS=0
+uint8 FAILED=1
+
+uint8 result

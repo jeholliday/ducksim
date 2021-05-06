@@ -2,6 +2,7 @@ import rospy
 from geometry_msgs.msg import Twist
 from ducksim.msg import Pose
 from ducksim.srv import SpawnDuck, AssignTask, AssignTaskResponse, CompleteTask
+from ducksim.srv import MoveObject, MoveObjectRequest, MoveObjectResponse
 
 class DuckNode:
 
@@ -69,3 +70,33 @@ class DuckNode:
             rospy.loginfo("Completed task...")
         except rospy.ServiceException as e:
             rospy.loginfo("complete_task call failed: %s"%e)
+
+    def pickup_object(self, obj):
+        rospy.loginfo("Waiting for move_obj service...")
+        rospy.wait_for_service('move_obj')
+        try:
+            move_obj = rospy.ServiceProxy('move_obj', MoveObject)
+            res = move_obj(self.name, obj, MoveObjectRequest.PICKUP)
+            if res.result == MoveObjectResponse.SUCCESS:
+                rospy.loginfo("Picked up: %s" % obj)
+                return True
+            else:
+                rospy.logerr("Failed to pick up: %s" % obj)
+                return False
+        except rospy.ServiceException as e:
+            rospy.loginfo("move_obj call failed: %s"%e)
+
+    def drop_object(self, obj):
+        rospy.loginfo("Waiting for move_obj service...")
+        rospy.wait_for_service('move_obj')
+        try:
+            move_obj = rospy.ServiceProxy('move_obj', MoveObject)
+            res = move_obj(self.name, obj, MoveObjectRequest.DROP)
+            if res.result == MoveObjectResponse.SUCCESS:
+                rospy.loginfo("Dropped up: %s" % obj)
+                return True
+            else:
+                rospy.logerr("Failed to drop: %s" % obj)
+                return False
+        except rospy.ServiceException as e:
+            rospy.loginfo("move_obj call failed: %s"%e)

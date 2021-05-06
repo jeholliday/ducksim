@@ -6,6 +6,7 @@ import random
 from geometry_msgs.msg import Twist, TransformStamped, Point
 from ducksim.msg import Pose
 from ducksim.srv import SpawnDuck, SpawnDuckResponse
+from ducksim.srv import MoveObject, MoveObjectRequest, MoveObjectResponse
 from visualization_msgs.msg import Marker
 from visualization_msgs.msg import MarkerArray
 
@@ -22,6 +23,8 @@ AREA_HEIGHT = 10
 
 DUCK_WIDTH = 0.5
 
+CARRY_DISTANCE = 0.75
+
 class SimObject:
 
     def __init__(self, name):
@@ -31,6 +34,8 @@ class SimObject:
         
         self.pose = Pose()
         self.vel = Twist()
+
+        self.parent = None # This object is in inventory of parent
 
         self.br = tf2_ros.TransformBroadcaster()
 
@@ -134,6 +139,7 @@ class DuckSimNode:
         self.objs = []
 
         self.spawnDuckSrv = rospy.Service('spawn_duck', SpawnDuck, self.spawn_duck)
+        self.moveObjSrv = rospy.Service('move_obj', MoveObject, self.move_obj)
         self.markerPub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=100)
 
         self.num_ducks = 0
@@ -173,6 +179,11 @@ class DuckSimNode:
             for i in range(len(self.objs)):
                 for j in range(i+1, len(self.objs)):
                     obj1, obj2 = self.objs[i], self.objs[j]
+
+                    # Don't collide objects currently being carried
+                    if obj1.parent is not None or obj2.parent is not None:
+                        continue
+
                     x1, y1 = obj1.pose.x, obj1.pose.y
                     x2, y2 = obj2.pose.x, obj2.pose.y
                     
@@ -180,6 +191,13 @@ class DuckSimNode:
                         obj1.collide(x2, y2, abs(obj2.vel.linear.y), 0.5)
                         obj2.collide(x1, y1, abs(obj1.vel.linear.y), 0.5)
                         #rospy.loginfo("Collide %s %s" % (obj1.name, obj2.name))
+
+            # Set position of carried objects
+            for obj in self.objs:
+                if obj.parent is not None:
+                    obj.pose.theta = obj.parent.pose.theta
+                    obj.pose.x = obj.parent.pose.x + CARRY_DISTANCE * math.cos(obj.parent.pose.theta)
+                    obj.pose.y = obj.parent.pose.y + CARRY_DISTANCE * math.sin(obj.parent.pose.theta)
             rate.sleep()
 
     def spawn_duck(self, req):
@@ -191,10 +209,44 @@ class DuckSimNode:
         duck.pose.x = random.random() * AREA_WIDTH
         duck.pose.y = random.random() * AREA_HEIGHT
         duck.pose.theta = random.random() * 2 * math.pi
-        #duck.vel.linear.y = random.random() * MAX_LINEAR_VEL
+        duck.vel.linear.y = random.random() * MAX_LINEAR_VEL
         self.objs.append(duck)
 
         return SpawnDuckResponse(name)
+
+    def move_obj(self, req):
+        ducks = [duck for duck in self.objs if isinstance(duck, Duck) and duck.name == req.duck]
+        if len(ducks) == 0:
+            rospy.logerr("Unrecognized duck in move_obj: %s" % req.duck)
+            return MoveObjectResponse(MoveObjectResponse.FAILED)
+        duck = ducks[0]
+
+        objs = [obj for obj in self.objs if obj.name == req.obj]
+        if len(objs) == 0:
+            rospy.logerr("Unrecognized obj in move_obj: %s" % req.obj)
+            return MoveObjectResponse(MoveObjectResponse.FAILED)
+        obj = objs[0]
+
+        if req.action == MoveObjectRequest.PICKUP:
+            if obj.parent is None:
+                obj.parent = duck
+                rospy.loginfo("%s picked up %s" % (duck.name, obj.name))
+                return MoveObjectResponse(MoveObjectResponse.SUCCESS)
+
+            rospy.logerr("%s tried to pickup %s but it is already being held" % (duck.name, obj.name)) 
+
+        elif req.action == MoveObjectRequest.DROP:
+            if obj.parent is duck:
+                obj.parent = None
+                rospy.loginfo("%s dropped %s" % (duck.name, obj.name))
+                return MoveObjectResponse(MoveObjectResponse.SUCCESS)
+
+            rospy.logerr("%s tried to drop an object it's not holding" % duck.name) 
+
+        else:
+            rospy.logerr("Unrecognized MoveObject action %d from %s" % (req.action, req.duck))
+
+        return MoveObjectResponse(MoveObjectResponse.FAILED)
 
     def publish_markers(self):
         markerArray = MarkerArray()
