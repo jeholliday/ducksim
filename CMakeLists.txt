@@ -51,6 +51,8 @@ add_message_files(
 add_service_files(
   FILES
   SpawnDuck.srv
+  AssignTask.srv
+  CompleteTask.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -112,6 +114,7 @@ catkin_package(
 catkin_install_python(PROGRAMS
   nodes/turtlesim_demo.py
   nodes/ducksim_node.py
+  nodes/duck_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

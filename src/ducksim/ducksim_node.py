@@ -3,7 +3,7 @@ import tf_conversions
 import tf2_ros
 import math
 import random
-from geometry_msgs.msg import Twist, TransformStamped
+from geometry_msgs.msg import Twist, TransformStamped, Point
 from ducksim.msg import Pose
 from ducksim.srv import SpawnDuck, SpawnDuckResponse
 from visualization_msgs.msg import Marker
@@ -67,7 +67,7 @@ class SimObject:
         self.br.sendTransform(t)
 
     def collide(self, x, y, vel, coeff):
-        #prev = self.vel.linear.y
+        prev = self.vel.linear.y
         if self.vel.linear.y > 0:
             self.vel.linear.y = (self.vel.linear.y + vel) * coeff
         else:
@@ -78,7 +78,10 @@ class SimObject:
             theta1 -= math.pi
 
         theta4 = math.atan2(y - self.pose.y, x - self.pose.x)
-        self.pose.theta = 2 * theta4 - 3 * theta1
+        if prev == 0:
+            self.pose.theta = theta4 - math.pi
+        else:
+           self.pose.theta = 2 * theta4 - 3 * theta1
         self.step(SIM_TIME_STEP)
 
         #rospy.loginfo("1=%.1f 4=%.1f 5=%.1f prev=%.1f other=%.1f new=%.1f" % (math.degrees(theta1), math.degrees(theta4), math.degrees(self.pose.theta), prev, vel, self.vel.linear.y))
@@ -133,14 +136,9 @@ class DuckSimNode:
         self.spawnDuckSrv = rospy.Service('spawn_duck', SpawnDuck, self.spawn_duck)
         self.markerPub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=100)
 
-        self.num_ducks = rospy.get_param('~num_ducks', default=0)
-        for i in range(self.num_ducks):
-            duck = Duck("duck%d" % i)
-            duck.pose.x = random.random() * AREA_WIDTH
-            duck.pose.y = random.random() * AREA_HEIGHT
-            duck.pose.theta = random.random() * 2 * math.pi
-            duck.vel.linear.y = random.random() * MAX_LINEAR_VEL
-            self.objs.append(duck)
+        self.num_ducks = 0
+        for i in range(rospy.get_param('~num_ducks', default=0)):
+            self.spawn_duck(None)
 
         self.num_balls = rospy.get_param('~num_balls', default=0)
         for i in range(self.num_balls):
@@ -189,7 +187,12 @@ class DuckSimNode:
         self.num_ducks += 1
         rospy.loginfo("Spawning duck: %s" % name)
 
-        self.objs.append(Duck(name))
+        duck = Duck(name)
+        duck.pose.x = random.random() * AREA_WIDTH
+        duck.pose.y = random.random() * AREA_HEIGHT
+        duck.pose.theta = random.random() * 2 * math.pi
+        #duck.vel.linear.y = random.random() * MAX_LINEAR_VEL
+        self.objs.append(duck)
 
         return SpawnDuckResponse(name)
 
@@ -232,6 +235,23 @@ class DuckSimNode:
             marker.pose.position.z = 0
 
             markerArray.markers.append(marker)
+
+        edge_marker = Marker()
+        edge_marker.id = len(self.objs)
+        edge_marker.header.frame_id = "/world"
+        edge_marker.type = marker.LINE_STRIP
+        edge_marker.action = marker.ADD
+        edge_marker.scale.x = 0.2
+        edge_marker.color.a = 1.0
+        edge_marker.color.r = 0.0
+        edge_marker.color.g = 0.0
+        edge_marker.color.b = 1.0
+        edge_marker.points.append(Point(0, 0, 0))
+        edge_marker.points.append(Point(AREA_WIDTH, 0, 0))
+        edge_marker.points.append(Point(AREA_WIDTH, AREA_HEIGHT, 0))
+        edge_marker.points.append(Point(0, AREA_HEIGHT, 0))
+        edge_marker.points.append(Point(0, 0, 0))
+        markerArray.markers.append(edge_marker)
 
         # Publish the MarkerArray
         self.markerPub.publish(markerArray)

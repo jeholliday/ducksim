@@ -1,0 +1,71 @@
+import rospy
+from geometry_msgs.msg import Twist
+from ducksim.msg import Pose
+from ducksim.srv import SpawnDuck, AssignTask, AssignTaskResponse, CompleteTask
+
+class DuckNode:
+
+    def __init__(self):
+        rospy.init_node('duck', anonymous=True)
+
+        rospy.loginfo("Waiting for spawn_duck service...")
+        rospy.wait_for_service('spawn_duck')
+        try:
+            spawn_duck = rospy.ServiceProxy('spawn_duck', SpawnDuck)
+            resp = spawn_duck()
+            self.name = resp.name
+            rospy.loginfo("I am now %s" % self.name)
+        except rospy.ServiceException as e:
+            rospy.loginfo("spawn_duck call failed: %s"%e)
+            exit(1)
+
+        self.pose = None
+        self.pose_sub = rospy.Subscriber('%s/pose' % self.name, Pose, self.updated_pose, queue_size=1)
+        
+        self.goal = None
+        self.goal_sub = None
+
+        self.pub = rospy.Publisher('%s/cmd_vel' % self.name, Twist, queue_size=1)
+
+        rate = rospy.Rate(10)
+        while not rospy.is_shutdown():
+            if self.goal is None:
+                self.get_task()
+            rate.sleep()
+
+    def updated_pose(self, pose):
+        self.pose = pose
+
+    def updated_goal(self, pose):
+        pass
+
+    def get_task(self):
+        rospy.loginfo("Waiting for assign_task service...")
+        rospy.wait_for_service('assign_task')
+        try:
+            assign_task = rospy.ServiceProxy('assign_task', AssignTask)
+            self.goal = assign_task(self.name)
+            if self.goal.type == AssignTaskResponse.NO_MORE_TASKS:
+                rospy.loginfo("No more tasks. Stopping...")
+                exit()
+            elif self.goal.type == AssignTaskResponse.GO_TO_POINT:
+                rospy.loginfo("Moving to (%.2f, %.2f)" % (self.goal.x, self.goal.y))
+            elif self.goal.type == AssignTaskResponse.COLLECT_BALL:
+                rospy.loginfo("Collecting: %s" % self.goal.name)
+                self.goal_sub = rospy.Subscriber('%s/pose' % self.goal.name, Pose, self.updated_pose, queue_size=1)
+        except rospy.ServiceException as e:
+            rospy.loginfo("assign_task call failed: %s"%e)
+
+    def complete_task(self):
+        if self.goal_sub is not None:
+            self.goal_sub.unregister()
+            self.goal_sub = None
+        self.goal = None
+
+        rospy.loginfo("Waiting for complete_task service...")
+        rospy.wait_for_service('complete_task')
+        try:
+            rospy.ServiceProxy('complete_task', CompleteTask)(self.name)
+            rospy.loginfo("Completed task...")
+        except rospy.ServiceException as e:
+            rospy.loginfo("complete_task call failed: %s"%e)
