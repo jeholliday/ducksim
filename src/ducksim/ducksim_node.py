@@ -10,20 +10,20 @@ from ducksim.srv import MoveObject, MoveObjectRequest, MoveObjectResponse
 from visualization_msgs.msg import Marker
 from visualization_msgs.msg import MarkerArray
 
-SIM_FREQUENCY = 100
+SIM_FREQUENCY = 50
 SIM_TIME_STEP = 1.0 / SIM_FREQUENCY
 
-MAX_LINEAR_VEL = 5.0
+MAX_LINEAR_VEL = 2.0
 MAX_ANGULAR_VEL = 2 * math.pi
 
-FRICTION = 0.5
+FRICTION = 1.0
 
 AREA_WIDTH = 10
 AREA_HEIGHT = 10
 
-DUCK_WIDTH = 0.5
+DUCK_WIDTH = 0.3
 
-CARRY_DISTANCE = 0.75
+CARRY_DISTANCE = 0.5
 
 class SimObject:
 
@@ -91,7 +91,7 @@ class SimObject:
 
         #rospy.loginfo("1=%.1f 4=%.1f 5=%.1f prev=%.1f other=%.1f new=%.1f" % (math.degrees(theta1), math.degrees(theta4), math.degrees(self.pose.theta), prev, vel, self.vel.linear.y))
 
-class Ball(SimObject):
+class FrictionObject(SimObject):
     def __init__(self, name):
         SimObject.__init__(self, name)
 
@@ -105,6 +105,14 @@ class Ball(SimObject):
             self.vel.linear.y += self.vel.linear.y**2 * FRICTION * time
         else:
             self.vel.linear.y = 0
+
+class Ball(FrictionObject):
+    def __init__(self, name):
+        SimObject.__init__(self, name)
+
+class TrashCan(FrictionObject):
+    def __init__(self, name):
+        SimObject.__init__(self, name)
 
 class Duck(SimObject):
     def __init__(self, name):
@@ -155,12 +163,20 @@ class DuckSimNode:
             ball.vel.linear.y = 0
             self.objs.append(ball)
 
+        self.num_trash_cans = rospy.get_param('~num_trash_cans', default=1)
+        for i in range(self.num_trash_cans):
+            trash_can = TrashCan("goal%d" % i)
+            trash_can.pose.x = random.random() * AREA_WIDTH
+            trash_can.pose.y = random.random() * AREA_HEIGHT
+            self.objs.append(trash_can)
+
         rate = rospy.Rate(SIM_FREQUENCY)
         while not rospy.is_shutdown():
             for obj in self.objs:
                 obj.step(SIM_TIME_STEP)
             self.publish_markers()
 
+            # Bounce objects off of edges of area
             for obj in self.objs:
                 x, y = obj.pose.x, obj.pose.y
                 if x > AREA_WIDTH:
@@ -176,6 +192,8 @@ class DuckSimNode:
                     obj.collide(x, y - 1, 0, 1.0)
                     obj.pose.y = 0
 
+            # Bounce objects off of each other
+            to_remove = []
             for i in range(len(self.objs)):
                 for j in range(i+1, len(self.objs)):
                     obj1, obj2 = self.objs[i], self.objs[j]
@@ -184,13 +202,32 @@ class DuckSimNode:
                     if obj1.parent is not None or obj2.parent is not None:
                         continue
 
-                    x1, y1 = obj1.pose.x, obj1.pose.y
-                    x2, y2 = obj2.pose.x, obj2.pose.y
-                    
-                    if math.sqrt((x1-x2)**2 + (y1-y2)**2) < DUCK_WIDTH:
-                        obj1.collide(x2, y2, abs(obj2.vel.linear.y), 0.5)
-                        obj2.collide(x1, y1, abs(obj1.vel.linear.y), 0.5)
+                    if isinstance(obj1, FrictionObject):
+                        x1, y1 = obj1.pose.x, obj1.pose.y
+                        x2, y2 = obj2.pose.x, obj2.pose.y
+                        
+                        # Collide objects if within DUCK_WIDTH
+                        if math.sqrt((x1-x2)**2 + (y1-y2)**2) < DUCK_WIDTH:
+                            # Mark balls that collide with trash_cans to be removed
+                            if isinstance(obj1, TrashCan) and isinstance(obj2, Ball):
+                                to_remove.append(obj2)
+                                continue
+                            elif isinstance(obj1, Ball) and isinstance(obj2, TrashCan):
+                                to_remove.append(obj1)
+                                continue
+
+                            obj1.collide(x2, y2, abs(obj2.vel.linear.y), 0.5)
+                            if isinstance(obj2, FrictionObject):
+                                obj2.collide(x1, y1, abs(obj1.vel.linear.y), 0.5)
                         #rospy.loginfo("Collide %s %s" % (obj1.name, obj2.name))
+
+            # Delete objects that collide with trash_cans
+            for obj in to_remove:
+                rospy.loginfo("Removing %s for colliding with trash_can" % obj.name)
+                try:
+                    self.objs.remove(obj)
+                except:
+                    rospy.logerr("Error removing object!")
 
             # Set position of carried objects
             for obj in self.objs:
@@ -264,18 +301,26 @@ class DuckSimNode:
                 marker.color.r = 1.0
                 marker.color.g = 1.0
                 marker.color.b = 0.0
-                marker.scale.x = 0.01
-                marker.scale.y = 0.01
-                marker.scale.z = 0.01
+                marker.scale.x = 0.005
+                marker.scale.y = 0.005
+                marker.scale.z = 0.005
                 marker.mesh_resource = "package://ducksim/meshes/duck.stl"
-            else:
+            elif isinstance(obj, Ball):
                 marker.color.r = 0.0
                 marker.color.g = 1.0
                 marker.color.b = 0.0
-                marker.scale.x = 0.02
-                marker.scale.y = 0.02
-                marker.scale.z = 0.02
+                marker.scale.x = 0.01
+                marker.scale.y = 0.01
+                marker.scale.z = 0.01
                 marker.mesh_resource = "package://ducksim/meshes/lettuce.stl"
+            else:
+                marker.color.r = 0.008
+                marker.color.g = 0.412
+                marker.color.b = 0.157
+                marker.scale.x = 1.0
+                marker.scale.y = 1.0
+                marker.scale.z = 1.0
+                marker.mesh_resource = "package://ducksim/meshes/trash_can.dae"
 
             q = tf_conversions.transformations.quaternion_from_euler(math.radians(90), 0, 0)
             marker.pose.orientation.w = q[0]

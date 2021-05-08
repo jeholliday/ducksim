@@ -1,7 +1,7 @@
 <launch>
     <node pkg="ducksim" type="ducksim_node.py" name="ducksim" output="screen">
         <param name="num_ducks" type="int" value="0" />
-        <param name="num_balls" type="int" value="5" />
+        <param name="num_balls" type="int" value="10" />
     </node>
 
     <node pkg="ducksim" type="duck_node.py" name="duckA" output="screen" />

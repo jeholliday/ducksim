@@ -1,9 +1,6 @@
 ## Configure Every Cloud VM
 Change the advertised routes to match the pod CIDRs of your cluster.
 ```
-# Start a insecure docker registry
-docker run -d -p 5000:5000 --restart=always --name registry registry:2
-
 # Install Tailscale
 # https://tailscale.com/download/linux
 
@@ -23,6 +20,12 @@ sudo tailscale up --advertise-routes=10.2.0.0/16
 
 # Start Tailscale
 sudo tailscale up --accept-routes
+```
+
+## Start a Docker registry on one cloud VM
+```
+# Start a insecure docker registry
+docker run -d -p 5000:5000 --restart=always --name registry registry:2
 ```
 
 ## Build Docker Images
