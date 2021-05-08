@@ -1,8 +1,9 @@
 string name
 ---
 uint8 NO_MORE_TASKS=0
-uint8 GO_TO_POINT=1
-uint8 COLLECT_BALL=2
+uint8 GO_TO_POINT=1    # Go to a point defined by x, y
+uint8 COLLECT_BALL=2   # Collect a ball with a given name
+uint8 DROP_BALL=3      # Drop a ball at a goal with a given name
 
 uint8 type
 string name

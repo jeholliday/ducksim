@@ -1,5 +1,6 @@
 import rospy
 from geometry_msgs.msg import Twist
+from std_srvs.srv import Empty
 from ducksim.msg import Pose
 from ducksim.srv import SpawnDuck, AssignTask, AssignTaskResponse, CompleteTask
 from ducksim.srv import MoveObject, MoveObjectRequest, MoveObjectResponse
@@ -28,6 +29,10 @@ class DuckNode:
 
         self.pub = rospy.Publisher('%s/cmd_vel' % self.name, Twist, queue_size=1)
 
+        self.cancel_task_srv = rospy.Service('%s/cancel_task', Empty, self.cancel_task)
+
+        self.holding = None
+
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             if self.goal is None:
@@ -54,8 +59,17 @@ class DuckNode:
             elif self.goal.type == AssignTaskResponse.COLLECT_BALL:
                 rospy.loginfo("Collecting: %s" % self.goal.name)
                 self.goal_sub = rospy.Subscriber('%s/pose' % self.goal.name, Pose, self.updated_pose, queue_size=1)
+                self.pickup_object(self.goal.name)
+                self.holding = self.goal.name
+            elif self.goal.type == AssignTaskResponse.DROP_BALL:
+                rospy.loginfo("Dropping ball at: %s" % self.goal.name)
+                self.goal_sub = rospy.Subscriber('%s/pose' % self.goal.name, Pose, self.updated_pose, queue_size=1)
+                self.drop_object(self.holding)
         except rospy.ServiceException as e:
             rospy.loginfo("assign_task call failed: %s"%e)
+
+    def cancel_task(self, req):
+        pass
 
     def complete_task(self):
         if self.goal_sub is not None:
@@ -93,7 +107,7 @@ class DuckNode:
             move_obj = rospy.ServiceProxy('move_obj', MoveObject)
             res = move_obj(self.name, obj, MoveObjectRequest.DROP)
             if res.result == MoveObjectResponse.SUCCESS:
-                rospy.loginfo("Dropped up: %s" % obj)
+                rospy.loginfo("Dropped object: %s" % obj)
                 return True
             else:
                 rospy.logerr("Failed to drop: %s" % obj)
