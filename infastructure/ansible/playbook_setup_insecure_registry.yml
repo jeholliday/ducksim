@@ -1,0 +1,18 @@
+- name: "Play 1: Setup insecure docker registry"
+  hosts: MyLinodeVMs
+  gather_facts: yes
+  become_user: yes
+
+  tasks:
+  - name: Create daemon.json
+    copy:
+      dest: "/etc/docker/daemon.json"
+      content: |
+        { "insecure-registries" : ["45.33.119.237:5000"] }
+    register: dockerconfig
+
+  - name: Restart Docker
+    ansible.builtin.service:
+      name: docker
+      state: restarted
+    when: dockerconfig.changed

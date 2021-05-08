@@ -16,7 +16,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: roscore-job
+  name: test-job
 spec:
   template:
     metadata:
@@ -24,10 +24,10 @@ spec:
         app: roscore
     spec:
       containers:
-      - name: ros-master
+      - name: test-job
         image: 45.33.119.237:5000/ros
         imagePullPolicy: Always
-        command: ["/opt/ros/melodic/bin/roscore"]
+        command: ["roslaunch", "ducksim", "ducksim_demo.launch"]
         args: []
         env:
           - name: ROS_MASTER_URI

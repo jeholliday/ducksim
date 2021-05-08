@@ -13,6 +13,7 @@ RUN apt-get -y update
 
 # Install ROS
 RUN apt-get install -y ros-melodic-ros-base
+RUN apt-get install -y ros-melodic-tf2-ros ros-melodic-tf-conversions
 RUN apt-get install -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool build-essential
 
 # Set ROS environment variables
@@ -32,5 +33,6 @@ ENV ROS_DISTRO=melodic
 
 # Build and install ducksim
 RUN mkdir -p /catkin_ws/src
+ARG DUCKSIM_VER=unknown
 RUN cd /catkin_ws/src && git clone https://github.com/jeholliday/ducksim.git
 RUN cd /catkin_ws && catkin_make -DCMAKE_INSTALL_PREFIX=/opt/ros/melodic install

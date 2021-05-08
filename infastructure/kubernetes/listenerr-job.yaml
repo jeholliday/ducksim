@@ -12,13 +12,13 @@ spec:
       subdomain: ros
       containers:
       - name: ros-listener
-        image: 129.114.26.80:5000/ros
+        image: 45.33.119.237:5000/ros
         imagePullPolicy: Always
         command: ["/opt/ros/melodic/bin/rostopic"]
         args: ["echo", "/hello"]
         env:
           - name: ROS_MASTER_URI
-            value: http://129.114.26.80:30001
+            value: http://45.33.119.237:30001
           - name: ROS_IP
             valueFrom:
               fieldRef:
