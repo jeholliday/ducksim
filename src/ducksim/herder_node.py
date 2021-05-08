@@ -48,7 +48,7 @@ class HerderNode:
                 # Check if object was being collected by a duck
                 duck = None
                 for d in self.collecting_obj:
-                    if self.collecting_obj[duck] == obj:
+                    if self.collecting_obj[d] == obj:
                        duck = d 
                 if duck != None:
                     # Object was randomly deposited while being collected

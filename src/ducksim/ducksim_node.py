@@ -130,10 +130,10 @@ class Ball(FrictionObject):
         self.marker.color.r = 0.0
         self.marker.color.g = 1.0
         self.marker.color.b = 0.0
-        self.marker.scale.x = 0.01
-        self.marker.scale.y = 0.01
-        self.marker.scale.z = 0.01
-        self.marker.mesh_resource = "package://ducksim/meshes/lettuce.stl"
+        self.marker.scale.x = 0.3
+        self.marker.scale.y = 0.3
+        self.marker.scale.z = 0.3
+        self.marker.type = Marker.SPHERE
 
 class TrashCan(FrictionObject):
     def __init__(self, name):
