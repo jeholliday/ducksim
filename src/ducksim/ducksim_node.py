@@ -4,7 +4,7 @@ import tf2_ros
 import math
 import random
 from geometry_msgs.msg import Twist, TransformStamped, Point
-from ducksim.msg import Pose
+from ducksim.msg import Pose, WorldStatus
 from ducksim.srv import SpawnDuck, SpawnDuckResponse
 from ducksim.srv import MoveObject, MoveObjectRequest, MoveObjectResponse
 from visualization_msgs.msg import Marker
@@ -38,6 +38,23 @@ class SimObject:
         self.parent = None # This object is in inventory of parent
 
         self.br = tf2_ros.TransformBroadcaster()
+
+        self.marker = Marker()
+        self.marker.id = random.randint(0, 2**31)
+        self.marker.header.frame_id = "/%s" % self.name
+        self.marker.type = Marker.MESH_RESOURCE
+        self.marker.action = Marker.ADD
+        self.marker.color.a = 1.0
+        self.marker.frame_locked = True
+
+        q = tf_conversions.transformations.quaternion_from_euler(math.radians(90), 0, 0)
+        self.marker.pose.orientation.w = q[0]
+        self.marker.pose.orientation.x = q[1]
+        self.marker.pose.orientation.y = q[2]
+        self.marker.pose.orientation.z = q[3]
+        self.marker.pose.position.x = 0
+        self.marker.pose.position.y = 0
+        self.marker.pose.position.z = 0
 
     def step(self, time):
         # Update position based on velocity
@@ -110,15 +127,39 @@ class Ball(FrictionObject):
     def __init__(self, name):
         SimObject.__init__(self, name)
 
+        self.marker.color.r = 0.0
+        self.marker.color.g = 1.0
+        self.marker.color.b = 0.0
+        self.marker.scale.x = 0.01
+        self.marker.scale.y = 0.01
+        self.marker.scale.z = 0.01
+        self.marker.mesh_resource = "package://ducksim/meshes/lettuce.stl"
+
 class TrashCan(FrictionObject):
     def __init__(self, name):
         SimObject.__init__(self, name)
+
+        self.marker.color.r = 0.008
+        self.marker.color.g = 0.412
+        self.marker.color.b = 0.157
+        self.marker.scale.x = 1.0
+        self.marker.scale.y = 1.0
+        self.marker.scale.z = 1.0
+        self.marker.mesh_resource = "package://ducksim/meshes/trash_can.dae"
 
 class Duck(SimObject):
     def __init__(self, name):
         SimObject.__init__(self, name)
 
         self.sub = rospy.Subscriber('%s/cmd_vel' % name, Twist, self.set_vel, queue_size=1)
+
+        self.marker.color.r = 1.0
+        self.marker.color.g = 1.0
+        self.marker.color.b = 0.0
+        self.marker.scale.x = 0.005
+        self.marker.scale.y = 0.005
+        self.marker.scale.z = 0.005
+        self.marker.mesh_resource = "package://ducksim/meshes/duck.stl"
 
     def set_vel(self, twist):
         if twist.linear.y > MAX_LINEAR_VEL:
@@ -148,7 +189,8 @@ class DuckSimNode:
 
         self.spawnDuckSrv = rospy.Service('spawn_duck', SpawnDuck, self.spawn_duck)
         self.moveObjSrv = rospy.Service('move_obj', MoveObject, self.move_obj)
-        self.markerPub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=100)
+        self.markerPub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=SIM_FREQUENCY)
+        self.statusPub = rospy.Publisher('world_status', WorldStatus, queue_size=SIM_FREQUENCY)
 
         self.num_ducks = 0
         for i in range(rospy.get_param('~num_ducks', default=0)):
@@ -170,11 +212,36 @@ class DuckSimNode:
             trash_can.pose.y = random.random() * AREA_HEIGHT
             self.objs.append(trash_can)
 
+        # Create a marker for the edge of the area
+        self.edge_marker = Marker()
+        self.edge_marker.id = random.randint(0, 2**31)
+        self.edge_marker.header.frame_id = "/world"
+        self.edge_marker.type = Marker.LINE_STRIP
+        self.edge_marker.action = Marker.ADD
+        self.edge_marker.scale.x = 0.2
+        self.edge_marker.color.a = 1.0
+        self.edge_marker.color.r = 0.0
+        self.edge_marker.color.g = 0.0
+        self.edge_marker.color.b = 1.0
+        self.edge_marker.points.append(Point(0, 0, 0))
+        self.edge_marker.points.append(Point(AREA_WIDTH, 0, 0))
+        self.edge_marker.points.append(Point(AREA_WIDTH, AREA_HEIGHT, 0))
+        self.edge_marker.points.append(Point(0, AREA_HEIGHT, 0))
+        self.edge_marker.points.append(Point(0, 0, 0))
+
+        count = 0
         rate = rospy.Rate(SIM_FREQUENCY)
         while not rospy.is_shutdown():
             for obj in self.objs:
                 obj.step(SIM_TIME_STEP)
-            self.publish_markers()
+            
+            # Publish markers less frequently
+            if count == 20:
+                self.publish_markers()
+                self.publish_world_status()
+                count = 0
+            else:
+                count += 1
 
             # Bounce objects off of edges of area
             for obj in self.objs:
@@ -224,10 +291,7 @@ class DuckSimNode:
             # Delete objects that collide with trash_cans
             for obj in to_remove:
                 rospy.loginfo("Removing %s for colliding with trash_can" % obj.name)
-                try:
-                    self.objs.remove(obj)
-                except:
-                    rospy.logerr("Error removing object!")
+                self.remove_marker(obj)
 
             # Set position of carried objects
             for obj in self.objs:
@@ -248,6 +312,12 @@ class DuckSimNode:
         duck.pose.theta = random.random() * 2 * math.pi
         duck.vel.linear.y = random.random() * MAX_LINEAR_VEL
         self.objs.append(duck)
+
+        markerArray = MarkerArray()
+        markerArray.markers.append(duck.marker)
+        self.markerPub.publish(markerArray)
+
+        self.publish_world_status()
 
         return SpawnDuckResponse(name)
 
@@ -285,73 +355,43 @@ class DuckSimNode:
 
         return MoveObjectResponse(MoveObjectResponse.FAILED)
 
+    def remove_marker(self, obj):
+        try:
+            # Remove marker for object
+            obj.marker.type = Marker.DELETE
+            markerArray = MarkerArray()
+            markerArray.markers.append(obj.marker)
+            self.markerPub.publish(markerArray)
+
+            self.objs.remove(obj)
+
+            self.publish_world_status()
+        except:
+            rospy.logerr("Error removing object!")
+
     def publish_markers(self):
         markerArray = MarkerArray()
-        for i, obj in enumerate(self.objs):
-            marker = Marker()
-            marker.id = i
-            marker.header.frame_id = "/%s" % obj.name
-            marker.type = marker.MESH_RESOURCE
-            marker.action = marker.ADD
-            marker.scale.x = 0.2
-            marker.scale.y = 0.2
-            marker.scale.z = 0.2
-            marker.color.a = 1.0
-            if isinstance(obj, Duck):
-                marker.color.r = 1.0
-                marker.color.g = 1.0
-                marker.color.b = 0.0
-                marker.scale.x = 0.005
-                marker.scale.y = 0.005
-                marker.scale.z = 0.005
-                marker.mesh_resource = "package://ducksim/meshes/duck.stl"
-            elif isinstance(obj, Ball):
-                marker.color.r = 0.0
-                marker.color.g = 1.0
-                marker.color.b = 0.0
-                marker.scale.x = 0.01
-                marker.scale.y = 0.01
-                marker.scale.z = 0.01
-                marker.mesh_resource = "package://ducksim/meshes/lettuce.stl"
-            else:
-                marker.color.r = 0.008
-                marker.color.g = 0.412
-                marker.color.b = 0.157
-                marker.scale.x = 1.0
-                marker.scale.y = 1.0
-                marker.scale.z = 1.0
-                marker.mesh_resource = "package://ducksim/meshes/trash_can.dae"
+        for obj in self.objs:
+            markerArray.markers.append(obj.marker)
 
-            q = tf_conversions.transformations.quaternion_from_euler(math.radians(90), 0, 0)
-            marker.pose.orientation.w = q[0]
-            marker.pose.orientation.x = q[1]
-            marker.pose.orientation.y = q[2]
-            marker.pose.orientation.z = q[3]
-            marker.pose.position.x = 0
-            marker.pose.position.y = 0
-            marker.pose.position.z = 0
-
-            markerArray.markers.append(marker)
-
-        edge_marker = Marker()
-        edge_marker.id = len(self.objs)
-        edge_marker.header.frame_id = "/world"
-        edge_marker.type = marker.LINE_STRIP
-        edge_marker.action = marker.ADD
-        edge_marker.scale.x = 0.2
-        edge_marker.color.a = 1.0
-        edge_marker.color.r = 0.0
-        edge_marker.color.g = 0.0
-        edge_marker.color.b = 1.0
-        edge_marker.points.append(Point(0, 0, 0))
-        edge_marker.points.append(Point(AREA_WIDTH, 0, 0))
-        edge_marker.points.append(Point(AREA_WIDTH, AREA_HEIGHT, 0))
-        edge_marker.points.append(Point(0, AREA_HEIGHT, 0))
-        edge_marker.points.append(Point(0, 0, 0))
-        markerArray.markers.append(edge_marker)
+        # Publish marker for edge of area
+        markerArray.markers.append(self.edge_marker)
 
         # Publish the MarkerArray
         self.markerPub.publish(markerArray)
+
+    def publish_world_status(self):
+        status = WorldStatus()
+
+        for obj in self.objs:
+            if isinstance(obj, Duck):
+                status.ducks.append(obj.name)
+            elif isinstance(obj, Ball):
+                status.objects.append(obj.name)
+            elif isinstance(obj, TrashCan):
+                status.goals.append(obj.name)
+
+        self.statusPub.publish(status)
 
 if __name__ == '__main__':
     DuckSimNode()
