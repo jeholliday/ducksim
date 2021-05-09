@@ -1,20 +1,20 @@
-# An example of how to run a node that publishes to a topic in Kubernetess
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: talker-job
+  name: simulation-job
 spec:
   template:
     metadata:
       labels:
-        app: talker
+        app: simulation
     spec:
       containers:
-      - name: ros-master
+      # Run the simulation
+      - name: simulation
         image: 45.33.119.237:5000/ros
         imagePullPolicy: Always
-        command: ["/opt/ros/melodic/bin/rostopic"]
-        args: ["pub", "-r", "1", "/hello", "std_msgs/String", "{data: 'Hello, World!'}"]
+        command: ["/opt/ros/melodic/bin/rosrun"]
+        args: ["ducksim", "ducksim_node.py", "_num_balls:=25"]
         env:
           - name: ROS_MASTER_URI
             value: http://45.33.119.237:30001

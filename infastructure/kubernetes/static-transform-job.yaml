@@ -1,21 +1,20 @@
+# Publish a static transform to center coordinate frame in Rviz
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: listener-job
+  name: static-transform-job
 spec:
   template:
     metadata:
       labels:
-        app: ros-listener
+        app: static-transform
     spec:
-      hostname: ros-listener
-      subdomain: ros
       containers:
-      - name: ros-listener
+      - name: static-transform-publisher
         image: 45.33.119.237:5000/ros
         imagePullPolicy: Always
-        command: ["/opt/ros/melodic/bin/rostopic"]
-        args: ["echo", "/hello"]
+        command: ["/opt/ros/melodic/bin/rosrun"]
+        args: ["tf2_ros", "static_transform_publisher", "5", "5", "0", "0", "0", "0", "world", "rviz_offset"]
         env:
           - name: ROS_MASTER_URI
             value: http://45.33.119.237:30001

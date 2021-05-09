@@ -1,20 +1,22 @@
-# An example of how to run a node that publishes to a topic in Kubernetess
+# An example of how to run a node that listens to a topic in Kubernetes
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: talker-job
+  name: listener-job
 spec:
   template:
     metadata:
       labels:
-        app: talker
+        app: ros-listener
     spec:
+      hostname: ros-listener
+      subdomain: ros
       containers:
-      - name: ros-master
+      - name: ros-listener
         image: 45.33.119.237:5000/ros
         imagePullPolicy: Always
         command: ["/opt/ros/melodic/bin/rostopic"]
-        args: ["pub", "-r", "1", "/hello", "std_msgs/String", "{data: 'Hello, World!'}"]
+        args: ["echo", "/hello"]
         env:
           - name: ROS_MASTER_URI
             value: http://45.33.119.237:30001

@@ -1,0 +1,38 @@
+# Create a service for CouchDB
+apiVersion: v1
+kind: Service
+metadata:
+  name: couchdb-svc
+spec:
+  type: NodePort
+  selector:
+    app: couchdb
+  ports:
+    - name: couchdb-svc-port
+      protocol: TCP
+      port: 5984
+      targetPort: 5984
+      nodePort: 30006
+---
+# Start a job for the database
+# Change the credentials to something more secure
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: couchdb-job
+spec:
+  template:
+    metadata:
+      labels:
+        app: couchdb
+    spec:
+      containers:
+      - name: couchdb
+        image: couchdb
+        imagePullPolicy: Always
+        env:
+        - name: COUCHDB_USER
+          value: "admin"
+        - name: COUCHDB_PASSWORD
+          value: "cloud"
+      restartPolicy: Never

@@ -139,9 +139,9 @@ class TrashCan(FrictionObject):
     def __init__(self, name):
         SimObject.__init__(self, name)
 
-        self.marker.color.r = 0.008
-        self.marker.color.g = 0.412
-        self.marker.color.b = 0.157
+        self.marker.color.r = 1
+        self.marker.color.g = 0
+        self.marker.color.b = 0
         self.marker.scale.x = 1.0
         self.marker.scale.y = 1.0
         self.marker.scale.z = 1.0

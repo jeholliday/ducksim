@@ -29,7 +29,7 @@ class DuckNode:
 
         self.pub = rospy.Publisher('%s/cmd_vel' % self.name, Twist, queue_size=1)
 
-        self.cancel_task_srv = rospy.Service('%s/cancel_task', Empty, self.cancel_task)
+        self.cancel_task_srv = rospy.Service('%s/cancel_task' % self.name, Empty, self.cancel_task)
 
         self.holding = None
 
