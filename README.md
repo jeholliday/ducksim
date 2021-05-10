@@ -70,10 +70,10 @@ kubectl apply -f infastructure/kubernetes/roscore-job.yaml
 
 # Wait for CouchDB and roscore to start
 
+kubectl apply -f infastructure/kubernetes/couchdb-logger-job.yaml
 kubectl apply -f infastructure/kubernetes/simulation-job.yaml
 kubectl apply -f infastructure/kubernetes/static-transform-job.yaml
 kubectl apply -f infastructure/kubernetes/herder-job.yaml
-kubectl apply -f infastructure/kubernetes/couchdb-logger-job.yaml
 ```
 
 ## Step 3: Start a Local Robot
@@ -118,10 +118,10 @@ The logs from each node can be found by looking in the CouchDB admin panel at:
 
 ### Stop Kubernetes Pods
 ```
-kubectl delete -f infastructure/kubernetes/couchdb-logger-job.yaml
 kubectl delete -f infastructure/kubernetes/herder-job.yaml
 kubectl delete -f infastructure/kubernetes/static-transform-job.yaml
 kubectl delete -f infastructure/kubernetes/simulation-job.yaml
+kubectl delete -f infastructure/kubernetes/couchdb-logger-job.yaml
 kubectl delete -f infastructure/kubernetes/roscore-job.yaml
 kubectl delete -f infastructure/kubernetes/couchdb-job.yaml
 ```

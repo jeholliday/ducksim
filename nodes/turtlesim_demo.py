@@ -46,10 +46,10 @@ if __name__ == '__main__':
             marker.color.b = 0.0
 
             q = tf.transformations.quaternion_from_euler(math.radians(90), 0, 0)
-            marker.pose.orientation.w = q[0]
-            marker.pose.orientation.x = q[1]
-            marker.pose.orientation.y = q[2]
-            marker.pose.orientation.z = q[3]
+            marker.pose.orientation.x = q[0]
+            marker.pose.orientation.y = q[1]
+            marker.pose.orientation.z = q[2]
+            marker.pose.orientation.w = q[3]
             marker.pose.position.x = 0
             marker.pose.position.y = 0
             marker.pose.position.z = 0

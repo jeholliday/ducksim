@@ -1,22 +1,26 @@
 <launch>
+    <node pkg="ducksim" type="couchdb_logger_node.py" name="couchdb" output="screen" />
+
     <node pkg="ducksim" type="ducksim_node.py" name="ducksim" output="screen">
         <param name="num_ducks" type="int" value="0" />
         <param name="num_balls" type="int" value="25" />
     </node>
 
-    <node pkg="ducksim" type="duck_node.py" name="duckA" output="screen" />
-    <node pkg="ducksim" type="duck_node.py" name="duckB" output="screen" />
-    <node pkg="ducksim" type="duck_node.py" name="duckC" output="screen" />
+    <include file="$(find ducksim)/launch/duck_nav.launch">
+        <arg name="robot_name" value="duckA" />
+    </include>
+    <!--
+    <include file="$(find ducksim)/launch/duck_nav.launch">
+        <arg name="robot_name" value="duckB" />
+    </include>
+    <include file="$(find ducksim)/launch/duck_nav.launch">
+        <arg name="robot_name" value="duckC" />
+    </include>
+    -->
 
     <node pkg="ducksim" type="herder_node.py" name="herder" output="screen" />
 
-    <node pkg="tf2_ros" type="static_transform_publisher" name="rviz_offset_broadcaster" args="5 5 0 0 0 0 world rviz_offset" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="rviz_offset_broadcaster" args="5 5 0 0 0 0 map rviz_offset" />
 
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find ducksim)/rviz/turtlesim_demo.rviz" />
-
-    <include file="$(find duck_sim)/launch/move_base.launch"/>
-    <node pkg="tf" type="static_transform_publisher" name="map_to_odom_tf_pub"
-          args="0 0 0 0 0 0 1 map odom 50"/>
-
-    <node pkg="map_server" type="map_server" name="map_server" args="$(find ducksim)/config/map_server.yaml"/>
 </launch>

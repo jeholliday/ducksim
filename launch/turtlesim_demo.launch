@@ -18,7 +18,7 @@
     <node name="turtle_pointer" pkg="turtle_tf2" type="turtle_tf2_listener.py" respawn="false" output="screen" >
     </node>
 
-    <node pkg="tf2_ros" type="static_transform_publisher" name="link1_broadcaster" args="6 6 0 0 0 0 world rviz_offset" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="link1_broadcaster" args="6 6 0 0 0 0 map rviz_offset" />
 
     <node name="turlesim_demo" pkg="ducksim" type="turtlesim_demo.py" respawn="false" output="screen">
         <param name="num_turtles" type="int" value="2" />

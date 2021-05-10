@@ -13,8 +13,9 @@ RUN apt-get -y update
 
 # Install ROS
 RUN apt-get install -y ros-melodic-ros-base
-RUN apt-get install -y ros-melodic-tf2-ros ros-melodic-tf-conversions
+RUN apt-get install -y ros-melodic-tf2-ros ros-melodic-tf-conversions ros-melodic-move-base ros-melodic-map-server
 RUN apt-get install -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool build-essential
+RUN apt-get install -y python-couchdb
 
 # Set ROS environment variables
 ENV LD_LIBRARY_PATH=/opt/ros/melodic/lib
