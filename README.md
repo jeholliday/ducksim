@@ -1,5 +1,15 @@
 # ducksim
 
+ducksim is a robot simulator inspired by [turtlesim](http://wiki.ros.org/turtlesim).
+Each robot can pickup and drop objects in the environment. Robots are coordinated to
+collect all of the objects and take them to a goal. The simulation is accomplished using
+a custom physics simulator. The progress of the simulation can be viewed in Rviz.
+
+This simulator was created as a part of a final project for CS 4287: Cloud Computing
+at Vanderbilt University in Spring 2021. It includes the necessary Docker and
+Kubernetes files to demonstrate how a ROS application can be distributed across
+Cloud and local infrastructure.
+
 ## Step 1: Install Ducksim locally
 
 Before you can simulate a local robot or run Rviz, you must first install ROS and then
