@@ -13,4 +13,10 @@
     <node pkg="tf2_ros" type="static_transform_publisher" name="rviz_offset_broadcaster" args="5 5 0 0 0 0 world rviz_offset" />
 
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find ducksim)/rviz/turtlesim_demo.rviz" />
+
+    <include file="$(find duck_sim)/launch/move_base.launch"/>
+    <node pkg="tf" type="static_transform_publisher" name="map_to_odom_tf_pub"
+          args="0 0 0 0 0 0 1 map odom 50"/>
+
+    <node pkg="map_server" type="map_server" name="map_server" args="$(find ducksim)/config/map_server.yaml"/>
 </launch>
