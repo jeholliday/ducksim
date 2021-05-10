@@ -118,6 +118,7 @@ catkin_install_python(PROGRAMS
   nodes/ducksim_node.py
   nodes/duck_node.py
   nodes/herder_node.py
+  nodes/couchdb_logger_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

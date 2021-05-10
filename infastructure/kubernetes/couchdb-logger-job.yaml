@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: couchdb-logger-job
+spec:
+  template:
+    metadata:
+      labels:
+        app: couchdb-logger
+    spec:
+      containers:
+      - name: couchdb-logger
+        image: 45.33.119.237:5000/ros
+        imagePullPolicy: Always
+        command: ["/opt/ros/melodic/bin/rosrun"]
+        args: ["ducksim", "couchdb_logger_node.py"]
+        env:
+          - name: ROS_MASTER_URI
+            value: http://45.33.119.237:30001
+          - name: ROS_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+      restartPolicy: Never
