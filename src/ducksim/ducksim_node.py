@@ -18,7 +18,7 @@ SIM_TIME_STEP = 1.0 / SIM_FREQUENCY
 MAX_LINEAR_VEL = 2.0
 MAX_ANGULAR_VEL = 2 * math.pi
 
-FRICTION = 1.0
+FRICTION = 1.5
 
 AREA_WIDTH = 10
 AREA_HEIGHT = 10
@@ -186,8 +186,8 @@ class DuckSimNode:
         self.num_balls = rospy.get_param('~num_balls', default=0)
         for i in range(self.num_balls):
             ball = Ball("ball%d" % i)
-            ball.pose.x = random.random() * AREA_WIDTH
-            ball.pose.y = random.random() * AREA_HEIGHT
+            ball.pose.x = random.random() * (AREA_WIDTH - 2 ) + 1
+            ball.pose.y = random.random() * (AREA_HEIGHT - 2) + 1
             ball.pose.theta = 0
             ball.vel.linear.x = 0
             self.objs.append(ball)
@@ -195,8 +195,8 @@ class DuckSimNode:
         self.num_trash_cans = rospy.get_param('~num_trash_cans', default=1)
         for i in range(self.num_trash_cans):
             trash_can = TrashCan("goal%d" % i)
-            trash_can.pose.x = random.random() * AREA_WIDTH
-            trash_can.pose.y = random.random() * AREA_HEIGHT
+            trash_can.pose.x = random.random() * (AREA_WIDTH - 2) + 1
+            trash_can.pose.y = random.random() * (AREA_HEIGHT - 2) + 1
             self.objs.append(trash_can)
 
         # Create a marker for the edge of the area
@@ -238,16 +238,16 @@ class DuckSimNode:
             # Bounce objects off of edges of area
             for obj in self.objs:
                 x, y = obj.pose.x, obj.pose.y
-                if x > AREA_WIDTH:
+                if x >= (AREA_WIDTH  - 0.5):
                     obj.collide(x + 1, y, 0, 1.0)
-                    obj.pose.x = AREA_WIDTH
-                elif x < 0:
+                    obj.pose.x = (AREA_WIDTH - 0.5)
+                elif x <= 0.5:
                     obj.collide(x - 1, y, 0, 1.0)
                     obj.pose.x = 0
-                if y > AREA_HEIGHT:
+                if y >= (AREA_HEIGHT - 0.5):
                     obj.collide(x, y + 1, 0, 1.0)
-                    obj.pose.y = AREA_HEIGHT
-                elif y < 0:
+                    obj.pose.y = (AREA_HEIGHT - 0.5)
+                elif y <= 0.5:
                     obj.collide(x, y - 1, 0, 1.0)
                     obj.pose.y = 0
 
@@ -307,8 +307,8 @@ class DuckSimNode:
         rospy.loginfo("Spawning duck: %s" % name)
 
         duck = Duck(name)
-        duck.pose.x = random.random() * AREA_WIDTH
-        duck.pose.y = random.random() * AREA_HEIGHT
+        duck.pose.x = random.random() * (AREA_WIDTH - 0.5)
+        duck.pose.y = random.random() * (AREA_HEIGHT - 0.5)
         duck.pose.theta = random.random() * 2 * math.pi
         #duck.vel.linear.x = random.random() * MAX_LINEAR_VEL
         self.objs.append(duck)

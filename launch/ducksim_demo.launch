@@ -9,14 +9,12 @@
     <include file="$(find ducksim)/launch/duck_nav.launch">
         <arg name="robot_name" value="duckA" />
     </include>
-    <!--
     <include file="$(find ducksim)/launch/duck_nav.launch">
         <arg name="robot_name" value="duckB" />
     </include>
     <include file="$(find ducksim)/launch/duck_nav.launch">
         <arg name="robot_name" value="duckC" />
     </include>
-    -->
 
     <node pkg="ducksim" type="herder_node.py" name="herder" output="screen" />
 
