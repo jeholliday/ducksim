@@ -65,15 +65,15 @@ sudo docker push <docker_registry>:5000/ros
 ### Start Kubernetes Pods
 In each of the provided jobs, you will need to replace the IP address with where ROS master can be found.
 ```
-kubectl apply -f infastructure/kubernetes/couchdb-job.yaml
-kubectl apply -f infastructure/kubernetes/roscore-job.yaml
+kubectl apply -f infrastructure/kubernetes/couchdb-job.yaml
+kubectl apply -f infrastructure/kubernetes/roscore-job.yaml
 
 # Wait for CouchDB and roscore to start
 
-kubectl apply -f infastructure/kubernetes/couchdb-logger-job.yaml
-kubectl apply -f infastructure/kubernetes/simulation-job.yaml
-kubectl apply -f infastructure/kubernetes/static-transform-job.yaml
-kubectl apply -f infastructure/kubernetes/herder-job.yaml
+kubectl apply -f infrastructure/kubernetes/couchdb-logger-job.yaml
+kubectl apply -f infrastructure/kubernetes/simulation-job.yaml
+kubectl apply -f infrastructure/kubernetes/static-transform-job.yaml
+kubectl apply -f infrastructure/kubernetes/herder-job.yaml
 ```
 
 ## Step 3: Start a Local Robot
@@ -118,10 +118,10 @@ The logs from each node can be found by looking in the CouchDB admin panel at:
 
 ### Stop Kubernetes Pods
 ```
-kubectl delete -f infastructure/kubernetes/herder-job.yaml
-kubectl delete -f infastructure/kubernetes/static-transform-job.yaml
-kubectl delete -f infastructure/kubernetes/simulation-job.yaml
-kubectl delete -f infastructure/kubernetes/couchdb-logger-job.yaml
-kubectl delete -f infastructure/kubernetes/roscore-job.yaml
-kubectl delete -f infastructure/kubernetes/couchdb-job.yaml
+kubectl delete -f infrastructure/kubernetes/herder-job.yaml
+kubectl delete -f infrastructure/kubernetes/static-transform-job.yaml
+kubectl delete -f infrastructure/kubernetes/simulation-job.yaml
+kubectl delete -f infrastructure/kubernetes/couchdb-logger-job.yaml
+kubectl delete -f infrastructure/kubernetes/roscore-job.yaml
+kubectl delete -f infrastructure/kubernetes/couchdb-job.yaml
 ```
