@@ -1,4 +1,5 @@
 import rospy
+import math
 import actionlib
 from actionlib_msgs.msg import GoalStatus
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
@@ -48,10 +49,6 @@ class DuckNode:
         prev_state = None
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
-            if self.goal is None:
-                self.get_task()
-                rate.sleep()
-
             state = self.client.get_state()
             if state == GoalStatus.PENDING:
                 state = "PENDING"
@@ -74,8 +71,10 @@ class DuckNode:
                 rospy.loginfo("State: %s" % state)
             prev_state = state
         
-            if self.goal is not None and self.client.get_state() == GoalStatus.SUCCEEDED:
+            if self.goal_pose is not None and math.sqrt((self.goal_pose.x - self.pose.x)**2 + (self.goal_pose.y - self.pose.y)**2) < 1 and state == "SUCCEEDED":
                 self.complete_task()
+            elif self.goal is None:
+                self.get_task()
 
             rate.sleep()
 

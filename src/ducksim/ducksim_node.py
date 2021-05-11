@@ -308,21 +308,22 @@ class DuckSimNode:
         else:
             name = req.name
 
-        self.num_ducks += 1
-        rospy.loginfo("Spawning duck: %s" % name)
+        if len([obj for obj in self.objs if obj.name == name]) == 0:
+            self.num_ducks += 1
+            rospy.loginfo("Spawning duck: %s" % name)
 
-        duck = Duck(name)
-        duck.pose.x = random.random() * (AREA_WIDTH - 1)
-        duck.pose.y = random.random() * (AREA_HEIGHT - 1)
-        duck.pose.theta = random.random() * 2 * math.pi
-        #duck.vel.linear.x = random.random() * MAX_LINEAR_VEL
-        self.objs.append(duck)
+            duck = Duck(name)
+            duck.pose.x = random.random() * (AREA_WIDTH - 1)
+            duck.pose.y = random.random() * (AREA_HEIGHT - 1)
+            duck.pose.theta = random.random() * 2 * math.pi
+            #duck.vel.linear.x = random.random() * MAX_LINEAR_VEL
+            self.objs.append(duck)
 
-        markerArray = MarkerArray()
-        markerArray.markers.append(duck.marker)
-        self.markerPub.publish(markerArray)
+            markerArray = MarkerArray()
+            markerArray.markers.append(duck.marker)
+            self.markerPub.publish(markerArray)
 
-        self.publish_world_status()
+            self.publish_world_status()
 
         return SpawnDuckResponse(name)
 

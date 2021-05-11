@@ -97,7 +97,7 @@ source ~/catkin_ws/install/setup.bash
 # Set ROS_IP to address of tailscale interface
 export ROS_IP=`ip a show dev tailscale0 | grep 'inet ' | awk '{print $2}' | cut -d/ -f1`
 export ROS_MASTER_URI=http://<master_ip>:11311
-rosrun ducksim duck_node.py
+roslaunch ducksim duck_nav.launch robot_name:=<robot_name>
 ```
 
 ### Run Rviz visuzlization
