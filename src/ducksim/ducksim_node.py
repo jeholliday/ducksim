@@ -18,7 +18,7 @@ SIM_TIME_STEP = 1.0 / SIM_FREQUENCY
 MAX_LINEAR_VEL = 2.0
 MAX_ANGULAR_VEL = 2 * math.pi
 
-FRICTION = 1.5
+FRICTION = 3.0
 
 AREA_WIDTH = 10
 AREA_HEIGHT = 10
@@ -130,7 +130,7 @@ class FrictionObject(SimObject):
 class Ball(FrictionObject):
     def __init__(self, name):
         FrictionObject.__init__(self, name, 0.3)
-
+        self.collision = 1
         self.marker.color.r = 0.0
         self.marker.color.g = 1.0
         self.marker.color.b = 0.0
@@ -142,7 +142,7 @@ class Ball(FrictionObject):
 class TrashCan(FrictionObject):
     def __init__(self, name):
         FrictionObject.__init__(self, name, 0.3)
-
+        self.collision = None
         self.marker.color.r = 1
         self.marker.color.g = 0
         self.marker.color.b = 0
@@ -156,7 +156,7 @@ class Duck(SimObject):
         SimObject.__init__(self, name, 0.3)
 
         self.sub = rospy.Subscriber('%s/cmd_vel' % name, Twist, self.set_vel, queue_size=1)
-
+        self.collision = 1
         self.marker.color.r = 1.0
         self.marker.color.g = 1.0
         self.marker.color.b = 0.0
@@ -243,13 +243,13 @@ class DuckSimNode:
                     obj.pose.x = (AREA_WIDTH - 0.5)
                 elif x <= 0.5:
                     obj.collide(x - 1, y, 0, 1.0)
-                    obj.pose.x = 0
+                    obj.pose.x = 0.5
                 if y >= (AREA_HEIGHT - 0.5):
                     obj.collide(x, y + 1, 0, 1.0)
                     obj.pose.y = (AREA_HEIGHT - 0.5)
                 elif y <= 0.5:
                     obj.collide(x, y - 1, 0, 1.0)
-                    obj.pose.y = 0
+                    obj.pose.y = 0.5
 
             # Bounce objects off of each other
             to_remove = []
@@ -261,8 +261,13 @@ class DuckSimNode:
                     if obj1.parent is not None or obj2.parent is not None:
                         continue
 
+                    # Don't collide duck and trash can if duck is carrying anything
                     if (isinstance(obj1, Duck) and isinstance(obj2, TrashCan) and obj1.child is not None) \
                             or (isinstance(obj2, Duck) and isinstance(obj1, TrashCan) and obj2.child is not None):
+                        continue
+
+                    # Don't collide duck and trash can, this is because with multiple ducks, a duck can move the trash can while another duck is dropping.
+                    if ((isinstance(obj1, Duck) and isinstance(obj2, TrashCan)) or ((isinstance(obj1, TrashCan) and isinstance(obj2, Duck)))):
                         continue
                     
                     if isinstance(obj1, FrictionObject):
@@ -307,8 +312,8 @@ class DuckSimNode:
         rospy.loginfo("Spawning duck: %s" % name)
 
         duck = Duck(name)
-        duck.pose.x = random.random() * (AREA_WIDTH - 0.5)
-        duck.pose.y = random.random() * (AREA_HEIGHT - 0.5)
+        duck.pose.x = random.random() * (AREA_WIDTH - 1)
+        duck.pose.y = random.random() * (AREA_HEIGHT - 1)
         duck.pose.theta = random.random() * 2 * math.pi
         #duck.vel.linear.x = random.random() * MAX_LINEAR_VEL
         self.objs.append(duck)
